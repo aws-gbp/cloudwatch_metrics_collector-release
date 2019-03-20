@@ -1,0 +1,12 @@
+Source: ros-kinetic-cloudwatch-metrics-collector
+Section: misc
+Priority: extra
+Maintainer: AWS RoboMaker <ros-contributions@amazon.com>
+Build-Depends: debhelper (>= 9.0.0), ros-kinetic-catkin, ros-kinetic-cloudwatch-metrics-common, ros-kinetic-ros-monitoring-msgs, ros-kinetic-roscpp, ros-kinetic-rostest, ros-melodic-aws-common, ros-melodic-aws-ros1-common
+Homepage: http://wiki.ros.org/cloudwatch_metrics_collector
+Standards-Version: 3.9.2
+
+Package: ros-kinetic-cloudwatch-metrics-collector
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, ros-kinetic-cloudwatch-metrics-common, ros-kinetic-ros-monitoring-msgs, ros-kinetic-roscpp, ros-melodic-aws-ros1-common
+Description: Subscriber node for the aws/monitoring topic to publish metrics to AWS Cloudwatch
