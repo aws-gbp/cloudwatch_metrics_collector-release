@@ -35,8 +35,13 @@
 #include <string>
 #include <vector>
 
-using namespace Aws::CloudWatch::Metrics;
+using namespace Aws::Client;
 using namespace Aws::Utils::Logging;
+
+
+namespace Aws {
+namespace CloudWatch {
+namespace Metrics {
 
 const std::string MetricsCollector::kNodeParamMonitorTopicsListKey = "aws_monitored_metric_topics";
 const std::string MetricsCollector::kNodeParamMetricNamespaceKey = "aws_metrics_namespace";
@@ -52,6 +57,7 @@ const std::string MetricsCollector::kNodeParamMetricDatumStorageResolutionKey =
   "storage_resolution";
 const std::set<int> MetricsCollector::kNodeParamMetricDatumStorageResolutionValidValues = {1, 60};
 
+
 MetricsCollector::MetricsCollector(std::shared_ptr<MetricManager> metric_manager,
                                    std::map<std::string, std::string> && default_dimensions)
 : metric_manager_(metric_manager), default_dimensions_(default_dimensions)
@@ -65,8 +71,7 @@ void MetricsCollector::ReceiveMetricCallback(
 
   for (auto metric_msg = metric_list_msg->metrics.begin();
        metric_msg != metric_list_msg->metrics.end(); ++metric_msg) {
-    int64_t timestamp =
-      ((int64_t)metric_msg->time_stamp.sec * 1000) + ((int64_t)metric_msg->time_stamp.nsec / 1000);
+    int64_t timestamp = metric_msg->time_stamp.toNSec() / 1000000;
     std::map<std::string, std::string> dimensions;
     Aws::AwsError status = Aws::AWS_ERR_OK;
     for (auto it = default_dimensions_.begin(); it != default_dimensions_.end(); ++it) {
@@ -119,9 +124,9 @@ Aws::AwsError MetricsCollector::SubscribeAllTopics(ros::NodeHandle & nh)
 
 MetricsCollector MetricsCollector::Build(Aws::AwsError & status)
 {
-  auto param_reader = std::make_shared<Aws::Client::Ros1NodeParameterReader>();
-  Aws::Client::ClientConfigurationProvider client_config_provider(param_reader);
-  Aws::Client::ClientConfiguration client_config = client_config_provider.GetClientConfiguration();
+  auto param_reader = std::make_shared<Ros1NodeParameterReader>();
+  ClientConfigurationProvider client_config_provider(param_reader);
+  ClientConfiguration client_config = client_config_provider.GetClientConfiguration();
 
   Aws::SDKOptions sdk_options;
   MetricManagerFactory mm_factory;
@@ -131,7 +136,7 @@ MetricsCollector MetricsCollector::Build(Aws::AwsError & status)
 
   // Load the metric namespace
   Aws::AwsError read_namespace_status =
-    param_reader->ReadStdString(kNodeParamMetricNamespaceKey.c_str(), metric_namespace);
+    param_reader->ReadParam(ParameterPath(kNodeParamMetricNamespaceKey), metric_namespace);
   if (Aws::AWS_ERR_OK == read_namespace_status) {
     AWS_LOGSTREAM_INFO(__func__, "Namespace: " << metric_namespace);
   } else {
@@ -143,7 +148,7 @@ MetricsCollector MetricsCollector::Build(Aws::AwsError & status)
   // Load the storage resolution
   int storage_resolution = kNodeDefaultMetricDatumStorageResolution;
   Aws::AwsError read_storage_resolution_status =
-    param_reader->ReadInt(kNodeParamMetricDatumStorageResolutionKey.c_str(), storage_resolution);
+    param_reader->ReadParam(ParameterPath(kNodeParamMetricDatumStorageResolutionKey), storage_resolution);
   if (Aws::AWS_ERR_OK == read_storage_resolution_status) {
     if (kNodeParamMetricDatumStorageResolutionValidValues.find(storage_resolution) ==
         kNodeParamMetricDatumStorageResolutionValidValues.end()) {
@@ -165,7 +170,7 @@ MetricsCollector MetricsCollector::Build(Aws::AwsError & status)
 
   // Load the default dimensions
   Aws::AwsError read_dimensions_status =
-    param_reader->ReadString(kNodeParamDefaultMetricDimensionsKey.c_str(), dimensions_param);
+    param_reader->ReadParam(ParameterPath(kNodeParamDefaultMetricDimensionsKey), dimensions_param);
   Aws::OStringStream logging_stream;
   logging_stream << "Default Metric Dimensions: { ";
   if (Aws::AWS_ERR_OK == read_dimensions_status) {
@@ -208,17 +213,23 @@ Aws::AwsError MetricsCollector::Initialize(ros::NodeHandle & nh)
   return status;
 }
 
+}  // namespace Metrics
+}  // namespace CloudWatch
+}  // namespace Aws
+
+
 int main(int argc, char * argv[])
 {
-  ros::init(argc, argv, MetricsCollector::kNodeName);
+  ros::init(argc, argv, Aws::CloudWatch::Metrics::MetricsCollector::kNodeName);
 
   ros::NodeHandle nh;
 
-  Aws::Utils::Logging::InitializeAWSLogging(
-    Aws::MakeShared<Aws::Utils::Logging::AWSROSLogger>(MetricsCollector::kNodeName.c_str()));
+  Aws::Utils::Logging::InitializeAWSLogging(Aws::MakeShared<Aws::Utils::Logging::AWSROSLogger>(
+    Aws::CloudWatch::Metrics::MetricsCollector::kNodeName.c_str()));
   Aws::AwsError status;
 
-  MetricsCollector metrics_collector = MetricsCollector::Build(status);
+  Aws::CloudWatch::Metrics::MetricsCollector metrics_collector
+    = Aws::CloudWatch::Metrics::MetricsCollector::Build(status);
   if (Aws::AWS_ERR_OK == status) {
     status = metrics_collector.Initialize(nh);
   }
