@@ -18,7 +18,7 @@
 #include <cloudwatch_metrics_common/cloudwatch_options.h>
 #include <aws_common/sdk_utils/aws_error.h>
 #include <aws_common/sdk_utils/parameter_reader.h>
-#include <ros/ros.h>
+#include <rclcpp/rclcpp.hpp>
 #include <unordered_set>
 #include <iostream>
 
@@ -68,7 +68,7 @@ const std::set<int> kNodeParamMetricDatumStorageResolutionValidValues = {1, 60};
  */
 void ReadPublishFrequency(
         std::shared_ptr<Aws::Client::ParameterReaderInterface> parameter_reader,
-        double & publish_frequency);
+        int & publish_frequency);
 
 /**
  *
@@ -98,10 +98,18 @@ void ReadMetricDimensions(
  * @return
  */
 void ReadStorageResolution(
-        std::shared_ptr<Aws::Client::ParameterReaderInterface> parameter_reader,
-        int & storage_resolution);
+  std::shared_ptr<Aws::Client::ParameterReaderInterface> parameter_reader,
+  int & storage_resolution);
 
-void ReadTopics(std::vector<std::string> & topics);
+/**
+ *
+ * @param parameter_reader
+ * @param topics 
+ * @return
+ */
+void ReadTopics(
+  std::shared_ptr<Aws::Client::ParameterReaderInterface> parameter_reader,
+  std::vector<std::string> & topics);
 
 /**
  * Fetch the options related to cloudwatch uploading and offline file mangement

@@ -15,7 +15,7 @@
 
 #include <aws_common/sdk_utils/aws_error.h>
 #include <aws_common/sdk_utils/parameter_reader.h>
-#include <ros/ros.h>
+#include <rclcpp/rclcpp.hpp>
 #include <unordered_set>
 #include <iostream>
 #include <aws/core/utils/logging/LogMacros.h>
@@ -38,7 +38,7 @@ namespace Utils {
  */
 void ReadPublishFrequency(
         std::shared_ptr<Aws::Client::ParameterReaderInterface> parameter_reader,
-        double & publish_frequency) {
+        int & publish_frequency) {
 
   Aws::AwsError ret =
           parameter_reader->ReadParam(ParameterPath(kNodeParamPublishFrequencyKey), publish_frequency);
@@ -159,11 +159,13 @@ void ReadStorageResolution(
   }
 }
 
-void ReadTopics(std::vector<std::string> & topics) {
+void ReadTopics(
+        std::shared_ptr<Aws::Client::ParameterReaderInterface> parameter_reader,
+        std::vector<std::string> & topics) {
 
   std::string param_key;
-  if (ros::param::search(kNodeParamMonitorTopicsListKey, param_key)) {
-    ros::param::get(param_key, topics);
+  if (AWS_ERR_OK != parameter_reader->ReadParam(ParameterPath(kNodeParamMonitorTopicsListKey), param_key)) {
+    parameter_reader->ReadParam(ParameterPath(param_key), topics);
   }
   if (topics.empty()) {
     AWS_LOGSTREAM_INFO(
@@ -235,31 +237,31 @@ void ReadFileManagerStrategyOptions(
   ReadOption(
     parameter_reader,
     kNodeParamStorageDirectory,
-    Aws::FileManagement::kDefaultFileManagerStrategyOptions.storage_directory,
+    Aws::CloudWatchMetrics::kDefaultMetricFileManagerStrategyOptions.storage_directory,
     file_manager_strategy_options.storage_directory);
 
   ReadOption(
     parameter_reader,
     kNodeParamFilePrefix,
-    Aws::FileManagement::kDefaultFileManagerStrategyOptions.file_prefix,
+    Aws::CloudWatchMetrics::kDefaultMetricFileManagerStrategyOptions.file_prefix,
     file_manager_strategy_options.file_prefix);
 
   ReadOption(
     parameter_reader,
     kNodeParamFileExtension,
-    Aws::FileManagement::kDefaultFileManagerStrategyOptions.file_extension,
+    Aws::CloudWatchMetrics::kDefaultMetricFileManagerStrategyOptions.file_extension,
     file_manager_strategy_options.file_extension);
 
   ReadOption(
     parameter_reader,
     kNodeParamMaximumFileSize,
-    Aws::FileManagement::kDefaultFileManagerStrategyOptions.maximum_file_size_in_kb,
+    Aws::CloudWatchMetrics::kDefaultMetricFileManagerStrategyOptions.maximum_file_size_in_kb,
     file_manager_strategy_options.maximum_file_size_in_kb);
 
   ReadOption(
     parameter_reader,
     kNodeParamStorageLimit,
-    Aws::FileManagement::kDefaultFileManagerStrategyOptions.storage_limit_in_kb,
+    Aws::CloudWatchMetrics::kDefaultMetricFileManagerStrategyOptions.storage_limit_in_kb,
     file_manager_strategy_options.storage_limit_in_kb);
 }
 
