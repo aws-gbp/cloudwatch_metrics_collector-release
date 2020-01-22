@@ -2,8 +2,16 @@
 Changelog for package cloudwatch_metrics_collector
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-2.1.1 (2019-07-26)
+2.2.0 (2020-01-22)
 ------------------
+* Bump package version to 2.2.0 (`#42 <https://github.com/aws-robotics/cloudwatchmetrics-ros1/issues/42>`_)
+* Fix default metric options
+  - Fix bug where default metric storage directory, file prefix etc were
+  being set to the same as logs causing issues when running both
+  cloudwatch logs and metrics at the same time.
+* Merge pull request `#37 <https://github.com/aws-robotics/cloudwatchmetrics-ros1/issues/37>`_ from aws-robotics/restore-tests
+  Restored unit tests
+* Restored unit tests
 * - minor README changes (`#35 <https://github.com/aws-robotics/cloudwatchmetrics-ros1/issues/35>`_)
   - remove debug flag (run with level info)
 * install missing library (`#33 <https://github.com/aws-robotics/cloudwatchmetrics-ros1/issues/33>`_)
@@ -59,4 +67,4 @@ Changelog for package cloudwatch_metrics_collector
   * increment package version
   * address comments, remove use of Aws::CloudWatch::Metrics namespace
 * Allow users to configure ROS output location
-* Contributors: AAlon, Devin Bonnie, Juan Rodriguez Hortala, M. M, Tim Robinson
+* Contributors: AAlon, Devin Bonnie, Juan Rodriguez Hortala, M. M, Ryan Newell, Tim Robinson
