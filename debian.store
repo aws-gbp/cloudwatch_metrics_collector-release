@@ -1,1 +1,1 @@
-{"trim": "", "base": "fdd5c72", "trimbase": "", "parent": "release/kinetic/cloudwatch_metrics_collector", "previous": "da5c943"}
+{"previous": "3c2e6b5", "trimbase": "", "base": "5c70d79", "parent": "release/kinetic/cloudwatch_metrics_collector", "trim": ""}
