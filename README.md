@@ -1,3 +1,26 @@
+## cloudwatch_metrics_collector (kinetic) - 2.2.0-1
+
+The packages in the `cloudwatch_metrics_collector` repository were released into the `kinetic` distro by running `/usr/local/bin/bloom-release cloudwatch_metrics_collector --track kinetic --rosdistro kinetic -e` on `Wed, 22 Jan 2020 22:10:21 -0000`
+
+The `cloudwatch_metrics_collector` package was released.
+
+Version of package(s) in repository `cloudwatch_metrics_collector`:
+
+- upstream repository: https://github.com/aws-robotics/cloudwatchmetrics-ros1.git
+- release repository: https://github.com/aws-gbp/cloudwatch_metrics_collector-release.git
+- rosdistro version: `2.1.1-1`
+- old version: `2.1.1-1`
+- new version: `2.2.0-1`
+
+Versions of tools used:
+
+- bloom version: `0.8.0`
+- catkin_pkg version: `0.4.9`
+- rosdep version: `0.15.1`
+- rosdistro version: `0.7.2`
+- vcstools version: `0.1.40`
+
+
 ## cloudwatch_metrics_collector (dashing) - 3.0.0-2
 
 The packages in the `cloudwatch_metrics_collector` repository were released into the `dashing` distro by running `/usr/bin/bloom-release -t dashing -r dashing cloudwatch_metrics_collector` on `Sun, 08 Sep 2019 18:58:50 -0000`
