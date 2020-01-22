@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License").
  * You may not use this file except in compliance with the License.
@@ -21,22 +21,23 @@
 #include <aws/monitoring/CloudWatchClient.h>
 #include <aws/monitoring/model/PutMetricDataRequest.h>
 #include <aws_common/sdk_utils/client_configuration_provider.h>
-#include <aws_ros2_common/sdk_utils/logging/aws_ros_logger.h>
-#include <rclcpp/rclcpp.hpp>
-#include <ros_monitoring_msgs/msg/metric_data.hpp>
-#include <ros_monitoring_msgs/msg/metric_dimension.hpp>
-#include <ros_monitoring_msgs/msg/metric_list.hpp>
-#include <std_msgs/msg/string.h>
+#include <aws_ros1_common/sdk_utils/logging/aws_ros_logger.h>
+#include <aws_ros1_common/sdk_utils/ros1_node_parameter_reader.h>
+#include <ros/ros.h>
+#include <ros_monitoring_msgs/MetricData.h>
+#include <ros_monitoring_msgs/MetricDimension.h>
+#include <ros_monitoring_msgs/MetricList.h>
+#include <std_msgs/String.h>
 
 #include <cloudwatch_metrics_collector/metrics_collector.hpp>
-#include <cloudwatch_metrics_collector/metrics_collector_parameter_helper.hpp>
 #include <cloudwatch_metrics_common/metric_service.hpp>
 #include <cloudwatch_metrics_common/metric_service_factory.hpp>
 #include <string>
 #include <vector>
 #include <map>
-#include <std_srvs/srv/trigger.hpp>
-#include <std_srvs/srv/empty.hpp>
+#include <std_srvs/Trigger.h>
+#include <std_srvs/Empty.h>
+#include <cloudwatch_metrics_collector/metrics_collector_parameter_helper.hpp>
 
 using namespace Aws::Client;
 using namespace Aws::Utils::Logging;
@@ -49,38 +50,37 @@ namespace Utils {
 void MetricsCollector::Initialize(std::string metric_namespace,
                          std::map<std::string, std::string> & default_dimensions,
                          int storage_resolution,
-                         rclcpp::Node::SharedPtr node,
+                         ros::NodeHandle node_handle,
                          const Aws::Client::ClientConfiguration & config,
                          const Aws::SDKOptions & sdk_options,
                          const Aws::CloudWatchMetrics::CloudWatchOptions & cloudwatch_options,
-                         const std::vector<std::string> & topics,
                          std::shared_ptr<MetricServiceFactory> metric_service_factory) {
 
   this->metric_namespace_ = metric_namespace;
   this->default_dimensions_ = default_dimensions;
   this->storage_resolution_.store(storage_resolution);
-  this->node_ = node;
+  this->node_handle_ = node_handle;
   this->metric_service_ = metric_service_factory->createMetricService(this->metric_namespace_,
                                                                       config,
                                                                       sdk_options,
                                                                       cloudwatch_options);
-  this->topics_ = topics;
 }
 
 void MetricsCollector::SubscribeAllTopics()
 {
+  ReadTopics(topics_);
   for (auto it = topics_.begin(); it != topics_.end(); ++it) {
-    auto sub = node_->create_subscription<ros_monitoring_msgs::msg::MetricList>(
+    ros::Subscriber sub = node_handle_.subscribe<ros_monitoring_msgs::MetricList>(
             *it, kNodeSubQueueSize,
-            [this](ros_monitoring_msgs::msg::MetricList::UniquePtr metric_list_msg) -> void {
-                this->RecordMetrics(std::move(metric_list_msg));
+            [this](const ros_monitoring_msgs::MetricList::ConstPtr & metric_list_msg) -> void {
+                this->RecordMetrics(metric_list_msg);
             });
     subscriptions_.push_back(sub);
   }
 }
 
 int MetricsCollector::RecordMetrics(
-  ros_monitoring_msgs::msg::MetricList::UniquePtr metric_list_msg)
+  const ros_monitoring_msgs::MetricList::ConstPtr & metric_list_msg)
 {
   int batched_count = 0;
   AWS_LOGSTREAM_DEBUG(__func__, "Received " << metric_list_msg->metrics.size() << " metrics");
@@ -118,12 +118,12 @@ int MetricsCollector::RecordMetrics(
   return batched_count;
 }
 
-int64_t MetricsCollector::GetMetricDataEpochMillis(const ros_monitoring_msgs::msg::MetricData & metric_msg)
+int64_t MetricsCollector::GetMetricDataEpochMillis(const ros_monitoring_msgs::MetricData & metric_msg)
 {
-  return rclcpp::Time(metric_msg.time_stamp).nanoseconds() / 1000000;
+  return metric_msg.time_stamp.toNSec() / 1000000;
 }
 
-void MetricsCollector::TriggerPublish()
+void MetricsCollector::TriggerPublish(const ros::TimerEvent &)
 {
   AWS_LOG_DEBUG(__func__, "Flushing metrics");
   this->metric_service_->publishBatchedData();
@@ -148,18 +148,18 @@ bool MetricsCollector::shutdown() {
   return is_shutdown;
 }
 
-bool MetricsCollector::checkIfOnline(std::shared_ptr<std_srvs::srv::Trigger::Request> , std::shared_ptr<std_srvs::srv::Trigger::Response> response) {
+bool MetricsCollector::checkIfOnline(std_srvs::Trigger::Request& request, std_srvs::Trigger::Response& response) {
 
-  AWS_LOGSTREAM_DEBUG(__func__, "received request");
+  AWS_LOGSTREAM_DEBUG(__func__, "received request " << request);
 
   if (!this->metric_service_) {
-    response->success = false;
-    response->message = "The MetricsCollector is not initialized";
+    response.success = false;
+    response.message = "The MetricsCollector is not initialized";
     return true;
   }
 
-  response->success = this->metric_service_->isConnected();
-  response->message = response->success ? "The MetricsCollector is connected" : "The MetricsCollector is not connected";
+  response.success = this->metric_service_->isConnected();
+  response.message = response.success ? "The MetricsCollector is connected" : "The MetricsCollector is not connected";
 
   return true;
 }

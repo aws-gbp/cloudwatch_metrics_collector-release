@@ -15,7 +15,7 @@
 
 #include <aws_common/sdk_utils/aws_error.h>
 #include <aws_common/sdk_utils/parameter_reader.h>
-#include <rclcpp/rclcpp.hpp>
+#include <ros/ros.h>
 #include <unordered_set>
 #include <iostream>
 #include <aws/core/utils/logging/LogMacros.h>
@@ -38,7 +38,7 @@ namespace Utils {
  */
 void ReadPublishFrequency(
         std::shared_ptr<Aws::Client::ParameterReaderInterface> parameter_reader,
-        int & publish_frequency) {
+        double & publish_frequency) {
 
   Aws::AwsError ret =
           parameter_reader->ReadParam(ParameterPath(kNodeParamPublishFrequencyKey), publish_frequency);
@@ -159,13 +159,11 @@ void ReadStorageResolution(
   }
 }
 
-void ReadTopics(
-        std::shared_ptr<Aws::Client::ParameterReaderInterface> parameter_reader,
-        std::vector<std::string> & topics) {
+void ReadTopics(std::vector<std::string> & topics) {
 
   std::string param_key;
-  if (AWS_ERR_OK != parameter_reader->ReadParam(ParameterPath(kNodeParamMonitorTopicsListKey), param_key)) {
-    parameter_reader->ReadParam(ParameterPath(param_key), topics);
+  if (ros::param::search(kNodeParamMonitorTopicsListKey, param_key)) {
+    ros::param::get(param_key, topics);
   }
   if (topics.empty()) {
     AWS_LOGSTREAM_INFO(
