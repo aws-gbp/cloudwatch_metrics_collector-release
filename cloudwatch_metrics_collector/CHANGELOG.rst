@@ -2,8 +2,13 @@
 Changelog for package cloudwatch_metrics_collector
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-2.2.0 (2020-01-22)
+2.2.1 (2020-03-27)
 ------------------
+* Bumpinng package version to match bloom release (`#45 <https://github.com/aws-robotics/cloudwatchmetrics-ros1/issues/45>`_)
+  Bump version to 2.2.1
+* Fix linting issues found by clang-tidy 6.0 (`#43 <https://github.com/aws-robotics/cloudwatchmetrics-ros1/issues/43>`_)
+  * clang-tidy fixes
+  * clang-tidy linting issues fixed manually
 * Bump package version to 2.2.0 (`#42 <https://github.com/aws-robotics/cloudwatchmetrics-ros1/issues/42>`_)
 * Fix default metric options
   - Fix bug where default metric storage directory, file prefix etc were
@@ -67,4 +72,4 @@ Changelog for package cloudwatch_metrics_collector
   * increment package version
   * address comments, remove use of Aws::CloudWatch::Metrics namespace
 * Allow users to configure ROS output location
-* Contributors: AAlon, Devin Bonnie, Juan Rodriguez Hortala, M. M, Ryan Newell, Tim Robinson
+* Contributors: AAlon, Devin Bonnie, Juan Rodriguez Hortala, M. M, Miaofei Mei, Ragha Prasad, Ryan Newell, Tim Robinson
