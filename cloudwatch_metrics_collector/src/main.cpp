@@ -22,17 +22,18 @@
 #include <aws/monitoring/CloudWatchClient.h>
 #include <aws/monitoring/model/PutMetricDataRequest.h>
 #include <aws_common/sdk_utils/client_configuration_provider.h>
-#include <aws_ros1_common/sdk_utils/logging/aws_ros_logger.h>
-#include <aws_ros1_common/sdk_utils/ros1_node_parameter_reader.h>
-#include <ros/ros.h>
-#include <ros_monitoring_msgs/MetricData.h>
-#include <ros_monitoring_msgs/MetricDimension.h>
-#include <ros_monitoring_msgs/MetricList.h>
-#include <std_msgs/String.h>
+#include <aws_ros2_common/sdk_utils/logging/aws_ros_logger.h>
+#include <aws_ros2_common/sdk_utils/ros2_node_parameter_reader.h>
+#include <rclcpp/rclcpp.hpp>
+#include <ros_monitoring_msgs/msg/metric_data.h>
+#include <ros_monitoring_msgs/msg/metric_dimension.h>
+#include <ros_monitoring_msgs/msg/metric_list.h>
+#include <std_msgs/msg/string.h>
 
 #include <cloudwatch_metrics_collector/metrics_collector.hpp>
 #include <cloudwatch_metrics_common/metric_service.hpp>
 #include <cloudwatch_metrics_common/metric_service_factory.hpp>
+#include <chrono>
 #include <string>
 #include <vector>
 #include <map>
@@ -42,37 +43,42 @@
 #include <cloudwatch_metrics_collector/metrics_collector_parameter_helper.hpp>
 #include <cloudwatch_metrics_common/cloudwatch_options.h>
 
+
 using Aws::CloudWatchMetrics::Utils::kNodeName;
 using Aws::CloudWatchMetrics::Utils::kNodeDefaultMetricDatumStorageResolution;
-using Aws::CloudWatchMetrics::Utils::MetricsCollector;
 
 int main(int argc, char * argv[])
 {
   int status = 0;
-  ros::init(argc, argv, kNodeName);
-  ros::NodeHandle node_handle;
+  rclcpp::init(argc, argv);
+  rclcpp::NodeOptions node_options;
+  node_options.allow_undeclared_parameters(true);
+  node_options.automatically_declare_parameters_from_overrides(true);
+  auto node = rclcpp::Node::make_shared(kNodeName, node_options);
 
-  std::vector<ros::Subscriber> subscriptions;
+  std::vector<std::shared_ptr<rclcpp::Subscription<ros_monitoring_msgs::msg::MetricData>>> subscriptions;
 
   // initialize SDK logging
-  Aws::Utils::Logging::InitializeAWSLogging(Aws::MakeShared<Aws::Utils::Logging::AWSROSLogger>(kNodeName.c_str()));
+  Aws::Utils::Logging::InitializeAWSLogging(Aws::MakeShared<Aws::Utils::Logging::AWSROSLogger>(kNodeName,
+    Aws::Utils::Logging::LogLevel::Trace, node));
 
   //-----------Start Read Configuration Parameters---------------------
 
   std::shared_ptr<Aws::Client::ParameterReaderInterface> parameter_reader =
-          std::make_shared<Aws::Client::Ros1NodeParameterReader>();
+          std::make_shared<Aws::Client::Ros2NodeParameterReader>(node);
 
-  // SDK client config
+  //SDK client config
   Aws::Client::ClientConfigurationProvider client_config_provider(parameter_reader);
   Aws::Client::ClientConfiguration client_config = client_config_provider.GetClientConfiguration();
 
   Aws::SDKOptions sdk_options;
 
-  double publish_frequency;
+  int publish_frequency;
 
   std::string metric_namespace;
   Aws::String dimensions_param;
   std::map<std::string, std::string> default_metric_dims;
+  std::vector<std::string> topics;
 
   // Load the storage resolution
   int storage_resolution = kNodeDefaultMetricDatumStorageResolution;
@@ -84,6 +90,7 @@ int main(int argc, char * argv[])
   Aws::CloudWatchMetrics::Utils::ReadStorageResolution(parameter_reader, storage_resolution);
 
   Aws::CloudWatchMetrics::Utils::ReadCloudWatchOptions(parameter_reader, cloudwatch_options);
+  Aws::CloudWatchMetrics::Utils::ReadTopics(parameter_reader, topics);
   //-----------------End read configuration parameters-----------------------
 
   // create the metric collector
@@ -94,14 +101,23 @@ int main(int argc, char * argv[])
           metric_namespace,
           default_metric_dims,
           storage_resolution,
-          node_handle,
+          node,
           client_config,
           sdk_options,
-          cloudwatch_options);
+          cloudwatch_options,
+          topics);
 
-  ros::ServiceServer service = node_handle.advertiseService(kNodeName,
-                                                            &Aws::CloudWatchMetrics::Utils::MetricsCollector::checkIfOnline,
-                                                            &metrics_collector);
+  auto is_online_callback =
+    [&metrics_collector](const std::shared_ptr<rmw_request_id_t> request_header,
+        const std::shared_ptr<std_srvs::srv::Trigger::Request> request,
+        std::shared_ptr<std_srvs::srv::Trigger::Response> response) -> void
+    {
+      (void) request_header;
+      metrics_collector.checkIfOnline(request, response);
+    };
+      
+  auto service = node->create_service<std_srvs::srv::Trigger>(kNodeName,
+                                                              is_online_callback);
 
   // start the collection process
   metrics_collector.start();
@@ -109,20 +125,19 @@ int main(int argc, char * argv[])
   bool publish_when_size_reached = cloudwatch_options.uploader_options.batch_trigger_publish_size
     != Aws::DataFlow::kDefaultUploaderOptions.batch_trigger_publish_size;
 
-  ros::Timer timer;
+  rclcpp::TimerBase::SharedPtr timer;
   // Publish on a timer if we are not publishing on a size limit.
   if (!publish_when_size_reached) {
     timer =
-      node_handle.createTimer(ros::Duration(publish_frequency),
-                              &Aws::CloudWatchMetrics::Utils::MetricsCollector::TriggerPublish,
-                              &metrics_collector);
+      node->create_wall_timer(std::chrono::seconds(publish_frequency),
+                              std::bind(&Aws::CloudWatchMetrics::Utils::MetricsCollector::TriggerPublish, &metrics_collector));
   }
 
-  ros::spin();
+  rclcpp::spin(node);
 
   AWS_LOG_INFO(__func__, "Shutting down Metrics Collector ...");
   metrics_collector.shutdown();
   Aws::Utils::Logging::ShutdownAWSLogging();
-  ros::shutdown();
+  rclcpp::shutdown();
   return status;
 }

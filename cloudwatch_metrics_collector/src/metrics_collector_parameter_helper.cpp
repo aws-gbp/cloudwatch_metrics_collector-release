@@ -13,17 +13,18 @@
  * permissions and limitations under the License.
  */
 
+#include <iostream>
+#include <unordered_set>
+
+#include <aws/core/utils/logging/LogMacros.h>
 #include <aws_common/sdk_utils/aws_error.h>
 #include <aws_common/sdk_utils/parameter_reader.h>
-#include <ros/ros.h>
-#include <unordered_set>
-#include <iostream>
-#include <aws/core/utils/logging/LogMacros.h>
+#include <rclcpp/rclcpp.hpp>
+
 #include <cloudwatch_metrics_collector/metrics_collector_parameter_helper.hpp>
 #include <cloudwatch_metrics_common/cloudwatch_options.h>
 
 using Aws::Client::ParameterPath;
-
 
 namespace Aws {
 namespace CloudWatchMetrics {
@@ -39,7 +40,7 @@ namespace Utils {
  */
 void ReadPublishFrequency(
         const std::shared_ptr<Aws::Client::ParameterReaderInterface>& parameter_reader,
-        double & publish_frequency) {
+        int & publish_frequency) {
 
   Aws::AwsError ret =
           parameter_reader->ReadParam(ParameterPath(kNodeParamPublishFrequencyKey), publish_frequency);
@@ -160,16 +161,15 @@ void ReadStorageResolution(
   }
 }
 
-void ReadTopics(std::vector<std::string> & topics) {
+void ReadTopics(
+        const std::shared_ptr<Aws::Client::ParameterReaderInterface>& parameter_reader,
+        std::vector<std::string> & topics) {
 
-  std::string param_key;
-  if (ros::param::search(kNodeParamMonitorTopicsListKey, param_key)) {
-    ros::param::get(param_key, topics);
-  }
+  parameter_reader->ReadParam(ParameterPath(kNodeParamMonitoringTopicsListKey), topics);
   if (topics.empty()) {
-    AWS_LOGSTREAM_INFO(
-            __func__, "Topic list not defined or empty. Listening on topic: " << kNodeDefaulMetricsTopic);
-    topics.push_back(kNodeDefaulMetricsTopic);
+    AWS_LOGSTREAM_INFO(__func__, "Monitoring topics list not defined or empty. Listening on topic: "
+                       << kNodeDefaultMetricsTopic);
+    topics.emplace_back(kNodeDefaultMetricsTopic);
   }
 }
 
