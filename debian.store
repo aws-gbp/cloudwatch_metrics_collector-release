@@ -1,1 +1,1 @@
-{"trim": "", "base": "abb3b09", "trimbase": "", "parent": "debian/dashing/cloudwatch_metrics_collector", "previous": "dc54406"}
+{"base": "4e9859f", "previous": "0c6fb56", "trimbase": "", "parent": "debian/dashing/cloudwatch_metrics_collector", "trim": ""}
