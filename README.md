@@ -1,3 +1,26 @@
+## cloudwatch_metrics_collector (melodic) - 2.2.2-1
+
+The packages in the `cloudwatch_metrics_collector` repository were released into the `melodic` distro by running `/usr/local/bin/bloom-release cloudwatch_metrics_collector --track melodic --rosdistro melodic -e` on `Thu, 17 Feb 2022 05:25:06 -0000`
+
+The `cloudwatch_metrics_collector` package was released.
+
+Version of package(s) in repository `cloudwatch_metrics_collector`:
+
+- upstream repository: https://github.com/jikawa-az/cloudwatchmetrics-ros1.git
+- release repository: https://github.com/aws-gbp/cloudwatch_metrics_collector-release.git
+- rosdistro version: `2.2.1-2`
+- old version: `2.2.1-2`
+- new version: `2.2.2-1`
+
+Versions of tools used:
+
+- bloom version: `0.10.7`
+- catkin_pkg version: `0.4.23`
+- rosdep version: `0.20.0`
+- rosdistro version: `0.8.3`
+- vcstools version: `0.1.42`
+
+
 ## cloudwatch_metrics_collector (dashing) - 3.0.1-1
 
 The packages in the `cloudwatch_metrics_collector` repository were released into the `dashing` distro by running `/usr/local/bin/bloom-release cloudwatch_metrics_collector --track dashing --rosdistro dashing -e` on `Tue, 31 Mar 2020 20:12:30 -0000`
