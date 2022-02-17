@@ -1,29 +1,24 @@
-## CloudWatch Metrics ROS2
+# cloudwatch_metrics_collector
+
 
 ## Overview
 The `cloudwatch_metrics_collector` ROS Node publishes your robot's metrics to the cloud to enable you to easily track the health of a fleet with the use of automated monitoring and actions for when a robot's metrics show abnormalities. You can easily track historic trends and profile behavior such as resource usage. Out of the box it provides a ROS interface to take a ROS message defining a metric and publish it to Amazon CloudWatch Metrics. The only configuration required to get started is setting up AWS Credentials and Permissions for your robot.The CloudWatch Metrics Node can be used with existing ROS Nodes that publish metric messages or with your own nodes if you instrument them to publish your own custom metrics.
 
 **Amazon CloudWatch Metrics Summary**: Amazon CloudWatch is a monitoring and management service built for developers, system operators, site reliability engineers (SRE), and IT managers. CloudWatch provides you with data and actionable insights to monitor your applications, understand and respond to system-wide performance changes, optimize resource utilization, and get a unified view of operational health. CloudWatch collects monitoring and operational data in the form of logs, metrics, and events, providing you with a unified view of AWS resources, applications and services that run on AWS, and on-premises servers. You can use CloudWatch to set high resolution alarms, visualize logs and metrics side by side, take automated actions, troubleshoot issues, and discover insights to optimize your applications, and ensure they are running smoothly.
 
-**Keywords**: ROS, ROS2, AWS, CloudWatch, Metrics
+**Keywords**: ROS, AWS, CloudWatch, Metrics
 
 ### License
 The source code is released under an [Apache 2.0].
 
 **Author**: AWS RoboMaker<br/>
 **Affiliation**: [Amazon Web Services (AWS)]<br/>
-**Maintainer**: AWS RoboMaker, ros-contributions@amazon.com
+
+RoboMaker cloud extensions rely on third-party software licensed under open-source licenses and are provided for demonstration purposes only. Incorporation or use of RoboMaker cloud extensions in connection with your production workloads or commercial product(s) or devices may affect your legal rights or obligations under the applicable open-source licenses. License information for this repository can be found [here](https://github.com/aws-robotics/cloudwatchmetrics-ros1/blob/master/LICENSE). AWS does not provide support for this cloud extension. You are solely responsible for how you configure, deploy, and maintain this cloud extension in your workloads or commercial product(s) or devices.
 
 ### Supported ROS Distributions
-- Dashing 
-
-### Build status
-* Travis CI:
-    * "master" branch [![Build Status](https://travis-ci.org/aws-robotics/cloudwatchmetrics-ros2.svg?branch=master)](https://travis-ci.org/aws-robotics/cloudwatchmetrics-ros2/branches)
-    * "release-latest" branch [![Build Status](https://travis-ci.org/aws-robotics/cloudwatchmetrics-ros2.svg?branch=release-latest)](https://travis-ci.org/aws-robotics/cloudwatchmetrics-ros2/branches)
-* ROS build farm:
-    * ROS2 Dashing @ u18.04 Bionic [![Build Status](http://build.ros2.org/job/Dbin_uB64__cloudwatch_metrics_collector__ubuntu_bionic_amd64__binary/badge/icon)](http://build.ros2.org/job/Dbin_uB64__cloudwatch_metrics_collector__ubuntu_bionic_amd64__binary)
-
+- Kinetic
+- Melodic
 
 ## Installation
 
@@ -33,17 +28,11 @@ You will need to create an AWS Account and configure the credentials to be able 
 This node will require the following AWS account IAM role permissions:
 - `cloudwatch:PutMetricData`
 
-### Binaries
-**Not available in apt yet**
-
-On Ubuntu you can install the latest version of this package using the following command
-
-        sudo apt-get update
-        sudo apt-get install -y ros-$ROS_DISTRO-cloudwatch-metrics-collector
-
 ### Building from Source
 
 To build from source you'll need to create a new workspace, clone and checkout the latest release branch of this repository, install all the dependencies, and compile. If you need the latest development features you can clone from the `master` branch instead of the latest release branch. While we guarantee the release branches are stable, __the `master` should be considered to have an unstable build__ due to ongoing development. 
+
+- Install build tool: please refer to `colcon` [installation guide](https://colcon.readthedocs.io/en/released/user/installation.html)
 
 - Create a ROS workspace and a source directory
 
@@ -52,7 +41,7 @@ To build from source you'll need to create a new workspace, clone and checkout t
 - Clone the package into the source directory . 
 
         cd ~/ros-workspace/src
-        git clone https://github.com/aws-robotics/cloudwatchmetrics-ros2.git -b release-latest
+        git clone https://github.com/aws-robotics/cloudwatchmetrics-ros1.git -b release-latest
 
 - Install dependencies
 
@@ -60,50 +49,52 @@ To build from source you'll need to create a new workspace, clone and checkout t
         sudo apt-get update && rosdep update
         rosdep install --from-paths src --ignore-src -r -y
         
+_Note: If building the master branch instead of a release branch you may need to also checkout and build the master branches of the packages this package depends on._
+
 - Build the packages
 
         cd ~/ros-workspace && colcon build
 
 - Configure ROS library Path
 
-        source ~/ros-workspace/install/local_setup.bash
+        source ~/ros-workspace/install/setup.bash
 
-- Run the unit tests
+- Build and run the unit tests
 
-        colcon test && colcon test-result --all
+        colcon build --packages-select cloudwatch_metrics_collector --cmake-target tests
+        colcon test --packages-select cloudwatch_metrics_collector cloudwatch_metrics_common && colcon test-result --all
 
 
 ## Launch Files
-
-The launch file uses the following arguments:
+In order to include a `cloudwatch_metrics_collector` in your launch file, you should add `<include file="$(find cloudwatch_metrics_collector)/launch/cloudwatch_metrics_collector.launch" />` to your launch file. The launch file uses the following arguments:
 
 | Arg Name | Description |
 | --------- | ------------ |
 | node_name | (optional) The name the metrics node should be launched with. If not provided the node will default to "cloudwatch_metrics_collector" |
-| config_file | (optional) A path to a config file. If provided the launch file will to load the configuration into the private namespace of the node, otherwise defaults to the sample config file. |
+| config_file | (optional) A path to a rosparam config file. If provided the launch file will use rosparam to load the configuration into the private namespace of the node. |
 
-An example launch file called `cloudwatch_metrics_collector_launch.py` is included in this project that gives an example of how you can include this node in your project and provide it with arguments.
+An example launch file called `sample_application.launch` is included in this project that gives an example of how you can include this node in your project and provide it with arguments.
 
 
 ## Usage
 
 ### Run the node
-- Launch the node by itself
-  - ``ros2 run cloudwatch_metrics_collector cloudwatch_metrics_collector __params:=`ros2 pkg prefix cloudwatch_metrics_collector`/share/cloudwatch_metrics_collector/config/sample_configuration.yaml``
-- With launch file using parameters in .yaml format (example provided)
-  - `ros2 launch cloudwatch_metrics_collector cloudwatch_metrics_collector.launch.py` 
+- **With** launch file using parameters in .yaml format (example provided)
+  - ROS: `roslaunch cloudwatch_metrics_collector sample_application.launch --screen` 
 
 ### Send a test metric 
-- `timestamp=$(date +%s); ros2 topic pub /metrics ros_monitoring_msgs/msg/MetricList "{metrics: [{header:{stamp:{sec: ${timestamp}, nanosec: 0}} , metric_name: 'cw_offline_metric', unit: 'Count', value: 1.0, time_stamp: {sec: ${timestamp}, nanosec: 0}, dimensions: [{name: 'example_dimension', value: 'example_value'}]}]}"`
+- `rostopic pub /metrics ros_monitoring_msgs/MetricList '[{header: auto, metric_name: "ExampleMetric", unit: "sec", value: 42, time_stamp: now, dimensions: []}, {header: auto, metric_name: "ExampleMetric2", unit: "count", value: 22, time_stamp: now, dimensions: [{name: "ExampleDimension", value: "1"}]}]'`
 
 
 ## Configuration File and Parameters
 An example configuration file named `sample_configuration.yaml` is provided that contains a detailed example configuration for the Node.
 
+All parameters to the Node are provided via the parameter server when the node is started. When loading configuration the Node will start looking for each setting inside of its private namespace and then search up the namespace heirarchy to the global namespace for the parameters.
+
 | Parameter Name | Description | Type | Default |
 | ------------- | -----------------------------------------------------------| ------------- | ------------ |
 | aws_metrics_namespace | If provided it will set the namespace for all metrics provided by this node to the provided value. If the node is running on AWS RoboMaker then the provided launch file will ignore this parameter in favor of the namespace specified by the AWS RoboMaker ecosystem | *string* | ROS |
-| aws_monitored_metric_topics | An optional list of topics to listen to, where the message the type is `ros_monitoring_msgs/msg/MetricList`. If not provided or is empty the node will just listen on the global "metrics" topic. If this list is not empty then the node will not subscribe to the "metrics" topic and will only subscribe to the topics in the list. | *array of strings* | metrics |
+| aws_monitored_metric_topics | An optional list of topics to listen to. If not provided or is empty the node will just listen on the global "metrics" topic. If this list is not empty then the node will not subscribe to the "metrics" topic and will only subscribe to the topics in the list. | *array of strings* | metrics |
 | storage_directory | The location where all offline metrics will be stored | *string* | ~/.ros/cwmetrics/ |
 | storage_limit | The maximum size of all offline storage files in KB. Once this limit is reached offline logs will start to be deleted oldest first. | *int* | 1048576 |
 | aws_client_configuration | If given the node will load the provided configuration when initializing the client. If a specific configuration setting is not included in the map then it will search up the namespace hierarchy for an 'aws_client_configuration' map that contains the field. In this way, a global configuration can be provided for all AWS nodes with only specific values overridden for a specific Node instance if needed | *map* | |
@@ -131,9 +122,10 @@ Most users won't need to touch these parameters, they are useful if you want fin
 Sends metrics in a ROS system to AWS CloudWatch Metrics service.
 
 #### Subscribed Topics
-- **Configurable (default: "`/metrics`")**
+- **`Configurable (default="/metrics")`**
 
-The node can subscribe to a configurable list of topic names. If no list is provided then it will default to subscribing to global topic names: `/metrics` (message type: `ros_monitoring_msgs/msg/MetricList`).
+  The node can subscribe to a configurable list of topic names. If no list in provided then it will default to subscribing to a global topic names `/metrics`.<br/>
+  Message Type: `ros_monitoring_msgs/MetricList`
 
 #### Published Topics
 None
@@ -141,16 +133,9 @@ None
 #### Services
 None
 
-
-## Bugs & Feature Requests
-Please contact the team directly if you would like to request a feature.
-
-Please report bugs in [Issue Tracker].
-
-
 [Amazon Web Services (AWS)]: https://aws.amazon.com/
 [Apache 2.0]: https://aws.amazon.com/apache-2-0/
 [AWS Configuration and Credential Files]: https://docs.aws.amazon.com/cli/latest/userguide/cli-config-files.html
 [high-resolution-metrics]: https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/publishingMetrics.html#high-resolution-metrics
-[Issue Tracker]: https://github.com/aws-robotics/cloudwatchmetrics-ros2/issues
+[Issue Tracker]: https://github.com/aws-robotics/cloudwatchmetrics-ros1/issues
 [ROS]: http://www.ros.org
